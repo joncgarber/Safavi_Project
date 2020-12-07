@@ -74,8 +74,7 @@ inflation_vec<-c(inflation_vec,1)
 true_income<-inflation_vec*pop$GNI.Per.Capita.CBI.Rial...Current 
 true_soap<-inflation_vec*soap$CIF.Value.per.Kilo.in.Rial
 true_shampoo<-inflation_vec*shampoo$CIF.Value.per.Kilo.in.Rial
-
-rbind(true_income,true_soap)
+true_toothpaste<-inflation_vec*toothpaste$CIF.Value.per.Kilo.in.Rial
 
 plot(true_income~true_soap, type = "l")
 
@@ -83,6 +82,10 @@ plot(true_income~true_soap, type = "l")
 plot(true_income, type = "l")
 plot(true_soap, type = "l")
 plot(true_shampoo, type = "l")
+plot(true_toothpaste,type = "l")
+#even though income is going down and soap and shampoo going up relatively, they are still buying because they care about hygene 
+
+
 ############################################################################
 
 
@@ -225,4 +228,20 @@ plot(log(yearly_import[2:17])~log(ratio_shampoo))
 plot(log(yearly_import[2:17])~log(ratio_soap))
 
 summary(lm(log(yearly_import[2:17])~log(ratio_toothpaste)))
+#################################################
+#End of modeling
+######################################
+#What we have learned so far
 
+
+#People have less to spend accounting for inflation
+par(mforw = c(1,1))
+plot(true_income, type = "l", main = "Inflation adjusted Income")
+
+#The inflation adjusted CIF for importing shampoo, toothpaste, soap, has gone up
+par(mfrow = c(1,3))
+plot(true_soap, type = "l", main = "Inflation adjusted Soap CIF")
+plot(true_shampoo, type = "l",main = "Inflation adjusted Shampoo CIF")
+plot(true_toothpaste,type = "l", main = "Inflation adjusted Toothpaste CIF")
+
+#
