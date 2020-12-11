@@ -1,33 +1,4 @@
-chamberCommerce = read.csv("M3_Chamber_of_commerce.csv", header = T)
-hygeneData= read.csv("M3_Hygene_Data.csv", header = T)
 
-
-totalIran = chamberCommerce[,1:6]
-iranExim = chamberCommerce[,7:10]
-totalTehran = chamberCommerce[,11:14]
-tehranExim =  chamberCommerce[,15:18]
-
-
-hygeneData
-
-
-#Want to see if there is correleation between cardholders and imports?
-
-
-hygeneData$Toothpaste.Import..Tons.
-
-
-
-
-#measuring from 2010 - 2018
-iranExim$Total.1[2:10]
-hygeneData$Toothpaste.Import..Tons.[2:10]
-plot(iranExim$Total.1[2:10]~hygeneData$Toothpaste.Import..Tons.[2:10])
-
-cor(iranExim$Total.1[2:10]~hygeneData$Toothpaste.Import..Tons.[2:10])
-iranExim$Total.1[2]
-temp1<-droplevels(iranExim$Total.1[2:10])
-temp1
 ####################################################################
 
 time<-c(1,2,3,4,5,6,7,8,9)
@@ -43,7 +14,7 @@ summary(lm(soap_imp~time))
 
 #####################################################################
 
-
+setwd("C:/Users/David/Desktop/Safavi Research/git_stuff/Safavi_Project/Manifest 2/Formatted Data")
 
 soap<-read.csv("soap.csv", header = T)
 shampoo<-read.csv("shampoo.csv" , header = T)
@@ -76,7 +47,7 @@ true_soap<-inflation_vec*soap$CIF.Value.per.Kilo.in.Rial
 true_shampoo<-inflation_vec*shampoo$CIF.Value.per.Kilo.in.Rial
 true_toothpaste<-inflation_vec*toothpaste$CIF.Value.per.Kilo.in.Rial
 
-plot(true_income~true_soap, type = "l")
+#plot(true_income~true_soap, type = "l")
 
 
 plot(true_income, type = "l")
@@ -235,7 +206,7 @@ summary(lm(log(yearly_import[2:17])~log(ratio_toothpaste)))
 
 
 #People have less to spend accounting for inflation
-par(mforw = c(1,1))
+par(mfrow = c(1,1))
 plot(true_income, type = "l", main = "Inflation adjusted Income")
 
 #The inflation adjusted CIF for importing shampoo, toothpaste, soap, has gone up
@@ -244,4 +215,31 @@ plot(true_soap, type = "l", main = "Inflation adjusted Soap CIF")
 plot(true_shampoo, type = "l",main = "Inflation adjusted Shampoo CIF")
 plot(true_toothpaste,type = "l", main = "Inflation adjusted Toothpaste CIF")
 
-#
+par(mfrow = c(2,2))
+
+#Local soap is very variable but on an upward trend 
+
+soap.data <- read.csv("soap.csv")
+shampoo.data <- read.csv("shampoo.csv")
+toothpaste.data <- read.csv("toothpaste.csv")
+iran <- read.csv("iran_data.csv", header = T)
+tehran <- read.csv("tehran_data.csv", header = T)
+###########################################################s
+#weight regression on total imports
+
+weight_model<-lm(pop$Total.Import.in.USD~soap$Import.in.Tons*shampoo$Import.in.Tons*toothpaste$Import.in.Tons )
+step_weight<-step(lm(pop$Total.Import.in.USD~1), scope = list(lower = ~1, upper = weight_model), direction = 'both')
+summary(step_weight)
+
+plot(pop$Total.Import.in.USD~toothpaste$Import.in.Tons, type = "l")
+plot(pop$Total.Import.in.USD, type = "l")
+plot(toothpaste$Import.in.Tons, type = "l")
+
+tooth_model<-(lm(pop$Total.Import.in.USD~toothpaste$Import.in.Tons))
+plot(tooth_model$residuals)
+abline(h = 0, col = "blue")
+acf(toothpaste$Import.in.Tons)
+acf(pop$Total.Import.in.USD)
+ad.test(tooth_model$residuals)
+
+library(MASS)

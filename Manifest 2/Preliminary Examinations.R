@@ -1,4 +1,4 @@
-setwd("C:/Users/Kristin/Desktop/Class Documents/Safavi Project/Manifest 2/Formatted Data")
+
 
 soap.data <- read.csv("soap.csv")
 shampoo.data <- read.csv("shampoo.csv")
@@ -13,7 +13,7 @@ for(d in 1:3){
   for(i in 2:dim(data)[2]){
     x = data$Year
     y = as.numeric(data[,i])
-    plot(x, y, ylab = "Year", xlab = colnames(data)[i],
+    plot(x, y, xlab = "Year", ylab = colnames(data)[i],
          main = switch(d, "soap", "shampoo", "toothpaste"))
     lines(x, y, xlim=range(x), ylim=range(y), pch=16)
   }
@@ -27,7 +27,7 @@ for(i in 2:8){
     data = switch(d, soap.data, shampoo.data, toothpaste.data)
     x = data$Year
     y = as.numeric(data[,i])
-    plot(x, y, ylab = "Year", xlab = colnames(data)[i],
+    plot(x, y, xlab = "Year", ylab = colnames(data)[i],
          main = switch(d, "soap", "shampoo", "toothpaste"))
     lines(x, y, xlim=range(x), ylim=range(y), pch=16)
   }
@@ -133,7 +133,7 @@ for(d in 1:3){
   data = switch(d, soap.data, shampoo.data, toothpaste.data)
   x = data$Year
   y = as.numeric(data$ROG.Import)
-  plot(x, y, ylab = "Year", xlab = " ROG Import in Tons",
+  plot(x, y, xlab = "Year", ylab = " ROG Import in Tons",
        main = switch(d, "soap", "shampoo", "toothpaste"),ylim = c(0,2))
   lines(x, y, xlim=range(x), ylim=range(y), pch=16)
   
@@ -182,4 +182,41 @@ for(d in 1:3){
   correlation = cor(iran$ROG.Female.Member.Proportion[-1], y[-1] )
   print(correlation)
 }
+
+
+plot(iran$Percent.Female.Members~iran$Year, type = "l",xlab = "year")
+plot(shampoo.data$ROG.Import~shampoo.data$Year, type = "l",xlab = "year")
+plot(soap.data$ROG.Import~shampoo.data$Year, type = "l",xlab = "year")
+plot(toothpaste.data$ROG.Import~shampoo.data$Year, type = "l",xlab = "year")
+
+plot(iran$Percent.Female.Cardholders~iran$Year, type = "l",xlab = "year")
+plot(shampoo.data$ROG.Import~shampoo.data$Year, type = "l",xlab = "year")
+plot(soap.data$ROG.Import~shampoo.data$Year, type = "l",xlab = "year")
+plot(toothpaste.data$ROG.Import~shampoo.data$Year, type = "l",xlab = "year")
+
+par(mfrow = (c(2,2)))
+iran_female_cardgrowth<-iran$Percent.Female.Cardholders[2:8] / iran$Percent.Female.Cardholders[1:7]
+plot(iran_female_cardgrowth~shampoo.data$Year[-1], type = "l")
+plot(shampoo.data$ROG.Import~shampoo.data$Year, type = "l",xlab = "year")
+plot(soap.data$ROG.Import~shampoo.data$Year, type = "l",xlab = "year")
+plot(toothpaste.data$ROG.Import~shampoo.data$Year, type = "l",xlab = "year")
+
+cor(iran_female_cardgrowth,shampoo.data$ROG.Import[-1])
+cor(iran_female_cardgrowth,soap.data$ROG.Import[-1])
+cor(iran_female_cardgrowth,toothpaste.data$ROG.Import[-1])
+
+length(iran_female_cardgrowth)
+length(shampoo.data$ROG.Import)
+iran_female_cardgrowth
+
+##################################################
+#What we have learned so far from these
+
+#Shampoo imports make up small percentage of total legal shampoo (lines: 9-21)
+
+#see the growth of local and marketshare with all 3 
+
+#Female and Male cardholders in IRAN ROG relatively similar (lines: 55-87)
+
+#Female card holder proportion does not seem to significantly influence ROG imports for products (lines: 187-190)
 
