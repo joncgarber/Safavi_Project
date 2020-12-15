@@ -79,7 +79,6 @@ expanded_toothpaste<-c(11.76,13.51,14.07,14.93,14.95,14.98,14.78,15.33,15.87,15.
 )
 yearly_import<-c(20649741657,30470554310,39473583836,51446809177,71959429228,83731923449,111734544809,68433706484,91378822732,118652876282,
                  88254166983,66202570877,67655518138,41630331169,49171587983,69066994380,75842149734)
-length(yearly_import)
 
 
 
@@ -242,4 +241,108 @@ acf(toothpaste$Import.in.Tons)
 acf(pop$Total.Import.in.USD)
 ad.test(tooth_model$residuals)
 
+###############################################################################
+#See if total cardholders is associated with hygene imports or total import
+
+iran <- read.csv("iran_data.csv", header = T)
+tehran <- read.csv("tehran_data.csv", header = T)
+
+length(iran$Total.Cardholders)
+length(iran$Year)
+
+
+#total cardholders is associated with (hygene imports) or total import
+
+#Here is total card holders against total import
+#yearly import from 1992 - 2017
+#Total cardholders from 2010 - 2019
+#We only have the matching data from 2010 - 2017
+par(mfrow = c(1,2))
+
+plot(yearly_import[10:17]~iran$Year, type = "l")
+
+plot(iran$Total.Cardholders~iran$Year, type = "l")
+summary(lm(yearly_import[10:17]~iran$Total.Cardholders))
+#not super great 
+
+
+#here are total cardholders against each of the individual hygene imports
+par(mfrow = c(2,2))
+
+
+
+plot(iran$Total~iran$Year, type = "l")
+plot(soap$Import.in.Tons~soap$Year, type = "l")
+plot(shampoo$Import.in.Tons~shampoo$Year, type = "l")
+plot(toothpaste$Import.in.Tons~toothpaste$Year, type = "l")
+
+cor(shampoo$Import.in.Tons, iran$Total.Cardholders)
+#shampoo and total import seem to be quite correlated
+
+cardholder_shamp<-lm(shampoo$Import.in.Tons~iran$Total.Cardholders)
+log_card_shamp<-lm(log(iran$Total.Cardholders)~log(shampoo$Import.in.Tons))
+summary(cardholder_shamp)
+summary(log_card_shamp)
+#INTERESTING
+acf(iran$Total.Cardholders)
+ad.test(cardholder_shamp$residuals)
+#residuals are normal enough
+#We dont know about variance though
 library(MASS)
+
+s1.res<- studres(cardholder_shamp)
+qqnorm(s1.res)
+qqline(s1.res)
+
+
+#_________________________________________
+#What about percentage changes for each?
+#______________________________________
+shampoo_ratios<- shampoo$Import.in.Tons[2:8] / shampoo$Import.in.Tons[1:7]
+
+
+ratio_shamp_card<- lm(shampoo_ratios~iran$ROG.Card.Total[-1])
+summary(ratio_shamp_card)
+
+plot(shampoo_ratios~shampoo$Year[-1], type = "l")
+plot(iran$ROG.Card.Total[-1]~iran$Year[-1], type = "l")
+
+
+plot(iran$ROG.Card.Total[-1]~shampoo_ratios)
+
+
+install.packages('olsrr')
+library(olsrr)
+ols_test_breusch_pagan(cardholder_shamp)
+ols_test_f(cardholder_shamp)
+#Passes for varaince
+
+##______________________________________________________
+#DOES GENDER HAVE EFFECT ON TOTAL IMPORTS
+#__________________________________________________
+par(mfrow = c(1,3))
+plot(iran$Male.Cardholders~iran$Year, type = "l")
+plot(iran$Female.Cardholders~iran$Year, type = "l")
+plot(yearly_import[10:17]~iran$Year, type = "l")
+cor(yearly_import[10:17], iran$Male.Cardholders)
+cor(yearly_import[10:17], iran$Female.Cardholders)
+summary(lm(yearly_import[10:17] ~iran$Female.Cardholders))
+#I don't think these are too worth looking at 
+
+plot(iran$Female..Card.Holders..Membership~iran$Year,type = "l")
+plot(shampoo$Import.in.Tons~shampoo$Year,type = "l")
+plot(soap$Import.in.Tons~shampoo$Year,type = "l")
+plot(toothpaste$Import.in.Tons~toothpaste$Year,type = "l")
+#Not super good 
+
+
+
+#_____________________________________________
+#Do members effect cardholders
+#_____________________________________________
+par(mfrow = c(1,2))
+plot(iran$Total.Members~iran$Year,type = "l")
+plot(iran$Total.Cardholders~iran$Year, type = "l")
+
+cor(iran$Total.Members,iran$Total.Cardholders)
+#Yes to total, definetly
