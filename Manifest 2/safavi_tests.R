@@ -33,44 +33,77 @@ basicPlots <- function(model, main = ""){
 
 
 
-runTests <- function(model){
+runTests <- function(model, show = TRUE){
   #only works for single variable
   dw.cv = c(0.61, 0.7, 0.763, 0.824, 0,879, 0927)
   
   resids = model$residuals
   ad = ad.test(resids)
-  dw = durbinWatsonTest(resids)
+  dw = durbinWatsonTest(model)$p
   bp = ols_test_breusch_pagan(model)
   f = ols_test_f(model)
   t.p = summary(model)$coefficients[2,4]
   
   pass.ad = ad$p.value > 0.05
-  pass.dw = dw >= dw.cv[length(resids)-5] && dw <= 4-dw.cv[length(resids)-5]
+  pass.dw = dw > 0.05
   pass.bp = bp$p > 0.05
   pass.f = f$p > 0.05
   pass.t = t.p <= 0.05
   
-  cat(paste(
-        "\nBeta_1 (t test):", round(t.p,5),
-        "\nPasses Association Assumption:", pass.t,
-        "\n---------------------------------------------",
-        "\nDurbin-Watson Test:", round(dw,5),
-        "\nPasses Independence Assumption:", pass.dw,
-        "\n---------------------------------------------",
-        "\nAnderson-Darling Test:", round(ad$p.value,5), 
-        "\nPasses Normality Assumption:", pass.ad,
-        "\n---------------------------------------------",
-        "\nBreusch Pagan Test:", round(bp$p, 5), 
-        "\nPasses Homoskedasticity Assumption:", pass.bp,
-        "\n---------------------------------------------",
-        "\nF Test:", round(f$p, 5), 
-        "\nPasses Homoskedasticity Assumption:", pass.f, "\n",
-        sep = " "))
+  if(show == TRUE){
+    cat(paste(
+      "\nBeta_1 (t test):", round(t.p,5),
+      "\nPasses Association Assumption:", pass.t,
+      "\n---------------------------------------------",
+      "\nDurbin-Watson Test:", round(dw,5),
+      "\nPasses Independence Assumption:", pass.dw,
+      "\n---------------------------------------------",
+      "\nAnderson-Darling Test:", round(ad$p.value,5), 
+      "\nPasses Normality Assumption:", pass.ad,
+      "\n---------------------------------------------",
+      "\nBreusch Pagan Test:", round(bp$p, 5), 
+      "\nPasses Homoskedasticity Assumption:", pass.bp,
+      "\n---------------------------------------------",
+      "\nF Test:", round(f$p, 5), 
+      "\nPasses Homoskedasticity Assumption:", pass.f, "\n",
+      sep = " "))
+  }
   
   invisible(return(pass.t && pass.ad && pass.f && pass.bp && pass.dw))
   
 }
 
+differencing <- function(Vector){
+  newVector <- vector[ 2:(length(Vector)) ] - vector[ 1:(length(vector)-1) ]
+  return(newVector)
+}
+
+lagRatio <- function(Vector){
+  newVector <- vector[ 2:(length(Vector)) ] / vector[ 1:(length(vector)-1) ]
+  return(newVector)
+}
+
+
+tryTransform <- function(var1, var2){
+  if(invisible(runTests(lm(var1~var2), show = FALSE))){
+    return(lm(var1 ~ var2))
+  }
+  else if(invisible(runTests(lm( log(var1)~var2), show = FALSE ))){
+    return(lm(log(var1)~var2))
+  }
+  else if(invisible(runTests( lm( log(var1)~log(var2) ), show = FALSE ))){
+    return(lm( log(var1)~log(var2) ))
+  }
+  else if(invisible(runTests( lm( var1~log(var2) ), show = FALSE ))){
+    return(lm( var1~log(var2) ))
+  }
+  else{
+    return(NULL)
+  }
+}
+
+###########################################################
+#Defining Data Variables
 
 soap.data <- read.csv("soap.csv")
 shampoo.data <- read.csv("shampoo.csv")
@@ -95,6 +128,7 @@ combined.cif = soap.cif + shamp.cif + tooth.cif
 combined.cif.adj = soap.cif.adj + shamp.cif.adj + tooth.cif.adj
 combined.tons = soap.data$Import.in.Tons + 
   shampoo.data$Import.in.Tons + toothpaste.data$Import.in.Tons
+
 
 ##################################################################
 
@@ -161,17 +195,20 @@ plot(Year, combined.tons,
 soap.tons.model = lm(pop$Total.Import.in.USD ~ soap.data$Import.in.Tons)
 basicPlots(soap.tons.model, main = "Total Import VS Soap Tons")
 runTests(soap.tons.model)
+tryTransform(pop$Total.Import.in.USD, soap.data$Import.in.Tons)
 
 
 shamp.tons.model = lm(pop$Total.Import.in.USD ~ shampoo.data$Import.in.Tons)
 basicPlots(shamp.tons.model, main = "Total Import VS Shampoo Tons")
 runTests(shamp.tons.model)
+tryTransform(pop$Total.Import.in.USD, shampoo.data$Import.in.Tons)
 
 
 #ACCEPTABLE
 tooth.tons.model = lm(pop$Total.Import.in.USD ~ toothpaste.data$Import.in.Tons)
 basicPlots(tooth.tons.model, main = "Total Import VS Toothpaste Tons")
 runTests(tooth.tons.model)
+tryTransform(pop$Total.Import.in.USD, toothpaste.data$Import.in.Tons)
 
 
 
@@ -182,14 +219,17 @@ runTests(tooth.tons.model)
 soap.cif.model = lm(pop$Total.Import.in.USD ~ soap.cif)
 basicPlots(soap.cif.model, main = "Total Import VS Soap Total CIF")
 runTests(soap.cif.model)
+model = tryTransform(pop$Total.Import.in.USD, soap.cif)
 
 shamp.cif.model = lm(pop$Total.Import.in.USD ~ shamp.cif)
 basicPlots(shamp.cif.model, main = "Total Import VS Shampoo Total CIF")
 runTests(shamp.cif.model)
+model = tryTransform(pop$Total.Import.in.USD, shamp.cif)
 
 tooth.cif.model = lm(pop$Total.Import.in.USD ~ tooth.cif)
 basicPlots(tooth.cif.model, main = "Total Import VS Toothpaste Total CIF")
 runTests(tooth.cif.model)
+tryTransform(pop$Total.Import.in.USD, tooth.cif)
 
 
 #--------------------------------------------------------
@@ -198,15 +238,18 @@ runTests(tooth.cif.model)
 soap.cif.adj.model = lm(pop$Total.Import.in.USD ~ soap.cif.adj)
 basicPlots(soap.cif.adj.model, main = "Total Import VS Soap Total CIF(adj)")
 runTests(soap.cif.adj.model)
+tryTransform(pop$Total.Import.in.USD, soap.cif.adj)
 
 shamp.cif.adj.model = lm(pop$Total.Import.in.USD ~ shamp.cif.adj)
 basicPlots(shamp.cif.adj.model, main = "Total Import VS Shampoo Total CIF(adj)")
 runTests(shamp.cif.adj.model)
+tryTransform(pop$Total.Import.in.USD, shamp.cif.adj)
+
 
 tooth.cif.adj.model = lm(pop$Total.Import.in.USD ~ tooth.cif.adj)
 basicPlots(tooth.cif.adj.model, main = "Total Import VS Toothpaste Total CIF(adj)")
 runTests(tooth.cif.adj.model)
-
+tryTransform(pop$Total.Import.in.USD, tooth.cif.adj)
 
 #-----------------------------------------------------
 #total imports VS combined hygiene 
@@ -216,13 +259,16 @@ runTests(tooth.cif.adj.model)
 combined.cif.model = lm(pop$Total.Import.in.USD ~ combined.cif)
 basicPlots(combined.cif.model, main = "Total Import VS Combined Total CIF")
 runTests(combined.cif.model)
+tryTransform(pop$Total.Import.in.USD, combined.cif)
 
 
 combined.cif.adj.model = lm(pop$Total.Import.in.USD ~ combined.cif.adj)
 basicPlots(combined.cif.adj.model, main = "Total Import VS Combined Total CIF(adj)")
 runTests(combined.cif.adj.model)
-
+tryTransform(pop$Total.Import.in.USD, combined.cif.adj)
 
 combined.tons.model = lm(pop$Total.Import.in.USD ~ combined.tons)
 basicPlots(combined.tons.model, main = "Total Import VS Combined Total Tons")
 runTests(combined.tons.model)
+tryTransform(pop$Total.Import.in.USD, combined.tons)
+
