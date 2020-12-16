@@ -1,18 +1,73 @@
 
-####################################################################
+library(olsrr)
+library(car)
 
-time<-c(1,2,3,4,5,6,7,8,9)
-tooth_diff<-c(-2946, -2991 ,-840,2727 ,800 ,765 ,1067 ,822 ,6417) 
-plot(tooth_diff~time)
+runTests <- function(model, show = TRUE){
+  #only works for single variable
+  dw.cv = c(0.61, 0.7, 0.763, 0.824, 0,879, 0927)
+  
+  resids = model$residuals
+  ad = ad.test(resids)
+  dw = durbinWatsonTest(model)$dw
+  bp = ols_test_breusch_pagan(model)
+  f = ols_test_f(model)
+  t.p = summary(model)$coefficients[2,4]
+  
+  pass.ad = ad$p.value > 0.05
+  pass.dw = dw > .763 && dw < 4 - .763
+  pass.bp = bp$p > 0.05
+  pass.f = f$p > 0.05
+  pass.t = t.p <= 0.05
+  
+  if(show == TRUE){
+    cat(paste(
+      "\nBeta_1 (t test):", round(t.p,5),
+      "\nPasses Association Assumption:", pass.t,
+      "\n---------------------------------------------",
+      "\nDurbin-Watson Test:", round(dw,5),
+      "\nPasses Independence Assumption:", pass.dw,
+      "\n---------------------------------------------",
+      "\nAnderson-Darling Test:", round(ad$p.value,5), 
+      "\nPasses Normality Assumption:", pass.ad,
+      "\n---------------------------------------------",
+      "\nBreusch Pagan Test:", round(bp$p, 5), 
+      "\nPasses Homoskedasticity Assumption:", pass.bp,
+      "\n---------------------------------------------",
+      "\nF Test:", round(f$p, 5), 
+      "\nPasses Homoskedasticity Assumption:", pass.f, "\n",
+      sep = " "))
+  }
+  
+  return(pass.t && pass.ad && pass.f && pass.bp && pass.dw)
+  
+}
 
-tooth_imp<-c(2964, 3560, 3742, 3607, 4984 ,4522, 3916, 4375, 213)
-plot(tooth_imp~time)
+basicPlots <- function(model, main = ""){
+  resids = model$residuals
+  plot(t(model$model[1]) ~ t(model$model[2]), 
+       xlab = colnames(model$model)[2], ylab = colnames(model$model[1]), main = main)
+  abline(model$coefficients[1], model$coefficients[2])
+  plot(resids, ylab = "Residuals")
+  abline(0,0, col = 'blue', lty = 2)
+}
 
-soap_imp<-c(8752, 7880, 8103, 11126, 7636, 9477, 11111, 13354, 14372)
-plot(soap_imp~time)
-summary(lm(soap_imp~time))
-
-#####################################################################
+tryTransform <- function(var1, var2){
+  if(invisible(runTests(lm(var1~var2), show = FALSE))){
+    return(lm(var1 ~ var2))
+  }
+  else if(invisible(runTests(lm( log(var1)~var2), show = FALSE ))){
+    return(lm(log(var1)~var2))
+  }
+  else if(invisible(runTests( lm( log(var1)~log(var2) ), show = FALSE ))){
+    return(lm( log(var1)~log(var2) ))
+  }
+  else if(invisible(runTests( lm( var1~log(var2) ), show = FALSE ))){
+    return(lm( var1~log(var2) ))
+  }
+  else{
+    return(NULL)
+  }
+}
 
 setwd("C:/Users/David/Desktop/Safavi Research/git_stuff/Safavi_Project/Manifest 2/Formatted Data")
 
@@ -24,7 +79,7 @@ iran<-read.csv("iran_data.csv", header = T)
 tehran<-read.csv("tehran_data.csv", header = T)
 pop<-read.csv("Currency-population.csv", header  =T)
 
-soap$Local.in.Tons
+
 soap_total<-soap$Import.in.Tons[-1]+soap$Local.in.Tons[-1]
 shampoo_total<-shampoo$Import.in.Tons+shampoo$Local.in.Tons
 toothpaste_total<-toothpaste$Import.in.Tons+toothpaste$Local.in.Tons
@@ -33,7 +88,8 @@ plot(shampoo_total, type = "l")
 plot(soap_total, type = "l")
 plot(toothpaste_total, type = "l")
 
-pop
+
+
 
 inflation_vec = c()
 for(i in 1:7){
@@ -46,10 +102,9 @@ true_income<-inflation_vec*pop$GNI.Per.Capita.CBI.Rial...Current
 true_soap<-inflation_vec*soap$CIF.Value.per.Kilo.in.Rial
 true_shampoo<-inflation_vec*shampoo$CIF.Value.per.Kilo.in.Rial
 true_toothpaste<-inflation_vec*toothpaste$CIF.Value.per.Kilo.in.Rial
+#Not worth investigating
 
-#plot(true_income~true_soap, type = "l")
-
-
+par(mfrow = c(1,4))
 plot(true_income, type = "l")
 plot(true_soap, type = "l")
 plot(true_shampoo, type = "l")
@@ -59,17 +114,11 @@ plot(true_toothpaste,type = "l")
 
 ############################################################################
 
-
-soap$CIF.Value.per.Kilo.in.Rial
-shampoo$CIF.Value.per.Kilo.in.Rial
-toothpaste$CIF.Value.per.Kilo.in.Rial
-
-
 library(car)
-summary(lm(soap$CIF.Value.per.Kilo.in.Rial~shampoo$CIF.Value.per.Kilo.in.Rial + toothpaste$CIF.Value.per.Kilo.in.Rial))
+runTests(lm(soap$CIF.Value.per.Kilo.in.Rial~shampoo$CIF.Value.per.Kilo.in.Rial + toothpaste$CIF.Value.per.Kilo.in.Rial))
 
 
-summary(lm(log(pop$Total.Import.in.USD)~log(shampoo$CIF.Value.per.Kilo.in.Rial) + log(toothpaste$CIF.Value.per.Kilo.in.Rial) 
+runTests(lm(log(pop$Total.Import.in.USD)~log(shampoo$CIF.Value.per.Kilo.in.Rial) + log(toothpaste$CIF.Value.per.Kilo.in.Rial) 
            +log(soap$CIF.Value.per.Kilo.in.Rial)))
 
 expanded_soap<-c(11.67,13.98, 14.91, 15.16 , 15.44, 15.43, 15.53, 16.10, 16.07, 16.27, 16.39, 16.25, 16.50, 16.42, 16.32, 16.50, 16.83)
@@ -85,25 +134,29 @@ yearly_import<-c(20649741657,30470554310,39473583836,51446809177,71959429228,837
 trade_reg<-lm(log(yearly_import)~expanded_soap + expanded_toothpaste + expanded_shampoo)
 ####IMPORTANT#############
 vif(trade_reg)
-durbinWatsonTest(trade_reg)
+#Variables are too colinear to do this regression
 
-#is variance constant?
-bartlett.test(log(yearly_import),expanded_soap)
 ###########################
 summary(lm(log(yearly_import)~expanded_soap))
-
-plot((log(yearly_import)~expanded_soap))
+par(mfrow = c(1,1))
+cor(log(yearly_import), expanded_soap)
+soap_vs_import<- lm(log(yearly_import)~expanded_soap)
+shampoo_vs_import<-lm(log(yearly_import)~expanded_shampoo)
+toothpaste_vs_import<-lm(log(yearly_import)~expanded_shampoo)
+summary(soap_vs_import)
+summary(shampoo_vs_import)
+summary(toothpaste_vs_import)
 
 
 transform_soap<-exp(expanded_soap)
-plot(yearly_import~expanded_soap)
+par(mfrow = c(1,2))
+plot(yearly_import)
+plot(transform_soap)
+cor(yearly_import, transform_soap)
+#Not great
 
-
-
-plot(sqrt(yearly_import)~transform_soap)
-plot(yearly_import~sqrt(transform_soap))
-summary(lm(yearly_import~sqrt(transform_soap)))
-
+runTests(lm(yearly_import~sqrt(transform_soap)))
+#Not the best
 ############Yearly Import is random###########################
 library(nortest)
 ad.test(yearly_import)
@@ -121,6 +174,7 @@ durbinWatsonTest(lm(log(yearly_import)~time))
 durbinWatsonTest(lm(expanded_soap~time))
 durbinWatsonTest(lm(expanded_shampoo~time))
 durbinWatsonTest(lm(expanded_toothpaste~time))
+#each of our variables is autocorrelated
 
 ####################What if we do percentage change in datapoints?############
 real_toothpaste<-exp(expanded_toothpaste)
@@ -141,22 +195,18 @@ acf(diff_shampoo)
 acf(diff_soap)
 acf(diff_toothpaste)
 
-durbinWatsonTest(lm(diff_toothpaste~seq(1,16)))
-#This works!
+###_________________________________###
+#Lets try the differences now
+###_________________________________###
 
 
 yearly_import2<- yearly_import[2:17]
 trade_reg = lm(yearly_import2 ~ diff_shampoo+diff_soap+diff_toothpaste)
 summary(trade_reg)
 
-plot(yearly_import2 ~ diff_shampoo)
-summary(lm(yearly_import2 ~ diff_shampoo))
-
-plot(yearly_import2 ~ diff_soap)
-summary(lm(yearly_import2 ~ diff_soap))
-
-plot(yearly_import2 ~ diff_toothpaste)
-summary(lm(yearly_import2 ~ diff_toothpaste))
+runTests(lm(yearly_import2 ~ diff_shampoo))
+runTests(lm(yearly_import2 ~ diff_soap))
+runTests(lm(yearly_import2 ~ diff_toothpaste))
 
 
 full<-lm(yearly_import2~diff_shampoo*diff_soap*diff_toothpaste )
@@ -167,7 +217,6 @@ summary(magic_model)
 #####What about predicting differences in revenue?################
 
 diff_import<- yearly_import2 - yearly_import[1:16]
-
 
 full2<-lm(diff_import~diff_shampoo*diff_soap*diff_toothpaste )
 magic_model2<-step(lm(diff_import~1), scope = list(lower = ~1, upper = full2), direction = 'both')
@@ -188,14 +237,6 @@ summary(magic_model3)
 full4<-lm(yearly_import[2:17]~ratio_toothpaste*ratio_soap*ratio_shampoo)
 magic_model4<-step(lm(yearly_import[2:17]~1), scope = list(lower = ~1, upper = full4), direction = 'both')
 summary(magic_model4)
-
-plot(yearly_import[2:17]~log(ratio_toothpaste))
-plot(yearly_import[2:17]~log(ratio_shampoo))
-plot(yearly_import[2:17]~log(ratio_soap))
-
-plot(log(yearly_import[2:17])~log(ratio_toothpaste))
-plot(log(yearly_import[2:17])~log(ratio_shampoo))
-plot(log(yearly_import[2:17])~log(ratio_soap))
 
 summary(lm(log(yearly_import[2:17])~log(ratio_toothpaste)))
 #################################################
@@ -218,11 +259,6 @@ par(mfrow = c(2,2))
 
 #Local soap is very variable but on an upward trend 
 
-soap.data <- read.csv("soap.csv")
-shampoo.data <- read.csv("shampoo.csv")
-toothpaste.data <- read.csv("toothpaste.csv")
-iran <- read.csv("iran_data.csv", header = T)
-tehran <- read.csv("tehran_data.csv", header = T)
 ###########################################################s
 #weight regression on total imports
 
@@ -230,7 +266,6 @@ weight_model<-lm(pop$Total.Import.in.USD~soap$Import.in.Tons*shampoo$Import.in.T
 step_weight<-step(lm(pop$Total.Import.in.USD~1), scope = list(lower = ~1, upper = weight_model), direction = 'both')
 summary(step_weight)
 
-plot(pop$Total.Import.in.USD~toothpaste$Import.in.Tons, type = "l")
 plot(pop$Total.Import.in.USD, type = "l")
 plot(toothpaste$Import.in.Tons, type = "l")
 
@@ -247,10 +282,6 @@ ad.test(tooth_model$residuals)
 iran <- read.csv("iran_data.csv", header = T)
 tehran <- read.csv("tehran_data.csv", header = T)
 
-length(iran$Total.Cardholders)
-length(iran$Year)
-
-
 #total cardholders is associated with (hygene imports) or total import
 
 #Here is total card holders against total import
@@ -262,40 +293,46 @@ par(mfrow = c(1,2))
 plot(yearly_import[10:17]~iran$Year, type = "l")
 
 plot(iran$Total.Cardholders~iran$Year, type = "l")
-summary(lm(yearly_import[10:17]~iran$Total.Cardholders))
+runTests(lm(yearly_import[10:17]~iran$Total.Cardholders))
 #not super great 
 
 
 #here are total cardholders against each of the individual hygene imports
 par(mfrow = c(2,2))
-
-
-
-plot(iran$Total~iran$Year, type = "l")
 plot(soap$Import.in.Tons~soap$Year, type = "l")
 plot(shampoo$Import.in.Tons~shampoo$Year, type = "l")
 plot(toothpaste$Import.in.Tons~toothpaste$Year, type = "l")
-
 cor(shampoo$Import.in.Tons, iran$Total.Cardholders)
 #shampoo and total import seem to be quite correlated
 
+
+
+
+
 cardholder_shamp<-lm(shampoo$Import.in.Tons~iran$Total.Cardholders)
 log_card_shamp<-lm(log(iran$Total.Cardholders)~log(shampoo$Import.in.Tons))
-summary(cardholder_shamp)
-summary(log_card_shamp)
+runTests(cardholder_shamp)
+runTests(log_card_shamp)
+
+shampoo_vs_cardholders<-lm(log(shampoo$Import.in.Tons)~log(iran$Total.Cardholders))
+runTests(shampoo_vs_cardholders)
+summary(shampoo_vs_cardholders)
+################################################################################################
+#What we are presenting 
+#Here are the things that are significant (that I have)
+
+
+
+tryTransform(shampoo$Import.in.Tons,iran$Total.Cardholders)
+
+basicPlots(cardholder_shamp)
+basicPlots(log_card_shamp)
 #INTERESTING
-acf(iran$Total.Cardholders)
-ad.test(cardholder_shamp$residuals)
-#residuals are normal enough
-#We dont know about variance though
-library(MASS)
-
-s1.res<- studres(cardholder_shamp)
-qqnorm(s1.res)
-qqline(s1.res)
+####################################################################
+runTests(lm(iran$Total.Cardholders ~pop$Total.Import.in.USD))
 
 
-#_________________________________________
+#_______________________
 #What about percentage changes for each?
 #______________________________________
 shampoo_ratios<- shampoo$Import.in.Tons[2:8] / shampoo$Import.in.Tons[1:7]
@@ -306,10 +343,6 @@ summary(ratio_shamp_card)
 
 plot(shampoo_ratios~shampoo$Year[-1], type = "l")
 plot(iran$ROG.Card.Total[-1]~iran$Year[-1], type = "l")
-
-
-plot(iran$ROG.Card.Total[-1]~shampoo_ratios)
-
 
 install.packages('olsrr')
 library(olsrr)
@@ -340,9 +373,40 @@ plot(toothpaste$Import.in.Tons~toothpaste$Year,type = "l")
 #_____________________________________________
 #Do members effect cardholders
 #_____________________________________________
-par(mfrow = c(1,2))
-plot(iran$Total.Members~iran$Year,type = "l")
-plot(iran$Total.Cardholders~iran$Year, type = "l")
+par(mfrow = c(2,1))
+plot(iran$Total.Members~iran$Year,type = "l", xlab = "Year", ylab = "Iran Chamber of Commerce Members")
+plot(iran$Total.Cardholders~iran$Year, type = "l" ,xlab = "Year", ylab = "Iran Total Ex-Im Cardholders")
+
+
 
 cor(iran$Total.Members,iran$Total.Cardholders)
-#Yes to total, definetly
+
+member_cardholder<-lm(iran$Total.Members~ iran$Total.Cardholders)
+#Yes to total, definetly is related to carholders
+runTests(member_cardholder)
+summary(member_cardholder)
+
+#############################################################
+#WHAT WE ARE PRESENTING
+#the total number of cardolders is a pretty good predictor of shampoo
+
+shampoo_vs_cardholders<-lm(log(shampoo$Import.in.Tons)~log(iran$Total.Cardholders))
+runTests(shampoo_vs_cardholders)
+basicPlots(shampoo_vs_cardholders)
+summary(shampoo_vs_cardholders)
+
+
+
+
+
+par(mfrow = c(2,1))
+plot(iran$Total.Members~iran$Year,type = "l", xlab = "Year", ylab = "Iran Chamber of Commerce Members")
+plot(iran$Total.Cardholders~iran$Year, type = "l" ,xlab = "Year", ylab = "Iran Total Ex-Im Cardholders")
+cor(iran$Total.Members,iran$Total.Cardholders)
+member_cardholder<-lm(iran$Total.Members~ iran$Total.Cardholders)
+#Yes to total, definetly is related to carholders
+runTests(member_cardholder)
+summary(member_cardholder)
+
+
+
