@@ -85,6 +85,11 @@ lagRatio <- function(Vector){
 
 
 tryTransform <- function(var1, var2){
+  diff1 = differencing(var1)
+  diff2 = differencing(var2)
+  ratio1 = lagRatio(var1)
+  ratio2 = lagRatio(var2)
+  
   if(invisible(runTests(lm(var1~var2), show = FALSE))){
     return(lm(var1 ~ var2))
   }
@@ -97,9 +102,38 @@ tryTransform <- function(var1, var2){
   else if(invisible(runTests( lm( var1~log(var2) ), show = FALSE ))){
     return(lm( var1~log(var2) ))
   }
+  
+  else if(invisible(runTests(lm(diff1~diff2), show = FALSE))){
+    return(lm(diff1 ~ diff2))
+  }
+  else if(invisible(runTests(lm( log(diff1)~diff2), show = FALSE ))){
+    return(lm(log(diff1)~diff2))
+  }
+  else if(invisible(runTests( lm( log(diff1)~log(diff2) ), show = FALSE ))){
+    return(lm( log(diff1)~log(diff2) ))
+  }
+  else if(invisible(runTests( lm( diff1~log(diff2) ), show = FALSE ))){
+    return(lm( diff1~log(diff2) ))
+  }
+  
+  else if(invisible(runTests(lm(ratio1~ratio2), show = FALSE))){
+    return(lm(ratio1 ~ ratio2))
+  }
+  else if(invisible(runTests(lm( log(ratio1)~ratio2), show = FALSE ))){
+    return(lm(log(ratio1)~ratio2))
+  }
+  else if(invisible(runTests( lm( log(ratio1)~log(ratio2) ), show = FALSE ))){
+    return(lm( log(ratio1)~log(ratio2) ))
+  }
+  else if(invisible(runTests( lm( ratio1~log(ratio2) ), show = FALSE ))){
+    return(lm( ratio1~log(ratio2) ))
+  }
+  
   else{
     return(NULL)
   }
+  
+  
 }
 
 ###########################################################
