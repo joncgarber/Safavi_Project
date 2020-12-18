@@ -39,13 +39,13 @@ runTests <- function(model, show = TRUE){
   
   resids = model$residuals
   ad = ad.test(resids)
-  dw = durbinWatsonTest(model)$p
+  dw = durbinWatsonTest(model)$dw
   bp = ols_test_breusch_pagan(model)
   f = ols_test_f(model)
   t.p = summary(model)$coefficients[2,4]
   
   pass.ad = ad$p.value > 0.05
-  pass.dw = dw > 0.025
+  pass.dw = dw > .763 && dw < 4 - .763
   pass.bp = bp$p > 0.05
   pass.f = f$p > 0.05
   pass.t = t.p <= 0.05
@@ -264,13 +264,14 @@ runTests(shamp.cif.model)
 tryTransform(pop$Total.Import.in.USD, shamp.cif)
 tryTransform(shamp.cif, pop$Total.Import.in.USD)
 
+
 tooth.cif.model = lm(pop$Total.Import.in.USD ~ tooth.cif)
 basicPlots(tooth.cif.model, main = "Total Import VS Toothpaste Total CIF")
 runTests(tooth.cif.model)
-tryTransform(pop$Total.Import.in.USD, tooth.cif)
 tryTransform(tooth.cif,pop$Total.Import.in.USD)
-
-
+#ACCEPTABLE WHEN LOG-LOG
+log.log.tooth.cif.model = tryTransform(pop$Total.Import.in.USD, tooth.cif)
+basicPlots(log.log.tooth.cif.model)
 #--------------------------------------------------------
 #Total Import in $ VS each hygiene product in Rial (adjusted for inflation)
 
@@ -289,8 +290,12 @@ tryTransform(shamp.cif.adj, pop$Total.Import.in.USD)
 tooth.cif.adj.model = lm(pop$Total.Import.in.USD ~ tooth.cif.adj)
 basicPlots(tooth.cif.adj.model, main = "Total Import VS Toothpaste Total CIF(adj)")
 runTests(tooth.cif.adj.model)
-tryTransform(pop$Total.Import.in.USD, tooth.cif.adj)
 tryTransform(tooth.cif.adj, pop$Total.Import.in.USD)
+
+#ACCEPTABLE FOR LOG LOG TRANSFORMATION
+log.log.tooth.cif.adj.model = tryTransform(pop$Total.Import.in.USD, tooth.cif.adj)
+
+
 
 #-----------------------------------------------------
 #total imports VS combined hygiene 
@@ -316,8 +321,25 @@ runTests(combined.tons.model)
 tryTransform(pop$Total.Import.in.USD, combined.tons)
 tryTransform(combined.tons, pop$Total.Import.in.USD)
 
-#0-----------------------
-totalVsCardholders <- tryTransform(shampoo.data$Import.in.Tons, iran$Total.Cardholders)
-totalVsCardholders
-runTests(lm(shampoo.data$Import.in.Tons~ iran$Total.Cardholders))
-basicPlots(lm(shampoo.data$Import.in.Tons~ iran$Total.Cardholders))
+########################################
+#PRESENTATION OUTPUT
+
+
+
+par(mfrow = c(2,1))
+plot(iran$Total.Members~iran$Year,type = "l", xlab = "Year", ylab = "Iran Chamber of Commerce Members")
+plot(iran$Total.Cardholders~iran$Year, type = "l" ,xlab = "Year", ylab = "Iran Total Ex-Im Cardholders")
+
+
+member_cardholder<-lm(iran$Total.Cardholders~ iran$Total.Members)
+#Yes to total, definitely is related to cardholders
+runTests(member_cardholder)
+summary(member_cardholder)
+
+resids = member_cardholder$residuals
+plot(t(member_cardholder$model[1]) ~ t(member_cardholder$model[2]), 
+     xlab = "Number of Members of Iran CoC", ylab = "Number of Iran Ex-Im Cardholders")
+abline(member_cardholder$coefficients[1], member_cardholder$coefficients[2])
+plot(resids~ iran$Year, ylab = "Residuals")
+abline(0,0, col = 'blue', lty = 2)
+
