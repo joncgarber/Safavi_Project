@@ -45,7 +45,7 @@ runTests <- function(model, show = TRUE){
   t.p = summary(model)$coefficients[2,4]
   
   pass.ad = ad$p.value > 0.05
-  pass.dw = dw > 0.05
+  pass.dw = dw > 0.025
   pass.bp = bp$p > 0.05
   pass.f = f$p > 0.05
   pass.t = t.p <= 0.05
@@ -69,17 +69,17 @@ runTests <- function(model, show = TRUE){
       sep = " "))
   }
   
-  invisible(return(pass.t && pass.ad && pass.f && pass.bp && pass.dw))
+  return(pass.t && pass.ad && pass.f && pass.bp && pass.dw)
   
 }
 
 differencing <- function(Vector){
-  newVector <- vector[ 2:(length(Vector)) ] - vector[ 1:(length(vector)-1) ]
+  newVector <- Vector[ 2:(length(Vector)) ] - Vector[ 1:(length(Vector)-1) ]
   return(newVector)
 }
 
 lagRatio <- function(Vector){
-  newVector <- vector[ 2:(length(Vector)) ] / vector[ 1:(length(vector)-1) ]
+  newVector <- Vector[ 2:(length(Vector)) ] / Vector[ 1:(length(Vector)-1) ]
   return(newVector)
 }
 
@@ -103,31 +103,31 @@ tryTransform <- function(var1, var2){
     return(lm( var1~log(var2) ))
   }
   
-  else if(invisible(runTests(lm(diff1~diff2), show = FALSE))){
-    return(lm(diff1 ~ diff2))
-  }
-  else if(invisible(runTests(lm( log(diff1)~diff2), show = FALSE ))){
-    return(lm(log(diff1)~diff2))
-  }
-  else if(invisible(runTests( lm( log(diff1)~log(diff2) ), show = FALSE ))){
-    return(lm( log(diff1)~log(diff2) ))
-  }
-  else if(invisible(runTests( lm( diff1~log(diff2) ), show = FALSE ))){
-    return(lm( diff1~log(diff2) ))
-  }
-  
-  else if(invisible(runTests(lm(ratio1~ratio2), show = FALSE))){
-    return(lm(ratio1 ~ ratio2))
-  }
-  else if(invisible(runTests(lm( log(ratio1)~ratio2), show = FALSE ))){
-    return(lm(log(ratio1)~ratio2))
-  }
-  else if(invisible(runTests( lm( log(ratio1)~log(ratio2) ), show = FALSE ))){
-    return(lm( log(ratio1)~log(ratio2) ))
-  }
-  else if(invisible(runTests( lm( ratio1~log(ratio2) ), show = FALSE ))){
-    return(lm( ratio1~log(ratio2) ))
-  }
+  # else if(invisible(runTests(lm(diff1~diff2), show = FALSE))){
+  #   return(lm(diff1 ~ diff2))
+  # }
+  # else if(invisible(runTests(lm( log(diff1)~diff2), show = FALSE ))){
+  #   return(lm(log(diff1)~diff2))
+  # }
+  # else if(invisible(runTests( lm( log(diff1)~log(diff2) ), show = FALSE ))){
+  #   return(lm( log(diff1)~log(diff2) ))
+  # }
+  # else if(invisible(runTests( lm( diff1~log(diff2) ), show = FALSE ))){
+  #   return(lm( diff1~log(diff2) ))
+  # }
+  # 
+  # else if(invisible(runTests(lm(ratio1~ratio2), show = FALSE))){
+  #   return(lm(ratio1 ~ ratio2))
+  # }
+  # else if(invisible(runTests(lm( log(ratio1)~ratio2), show = FALSE ))){
+  #   return(lm(log(ratio1)~ratio2))
+  # }
+  # else if(invisible(runTests( lm( log(ratio1)~log(ratio2) ), show = FALSE ))){
+  #   return(lm( log(ratio1)~log(ratio2) ))
+  # }
+  # else if(invisible(runTests( lm( ratio1~log(ratio2) ), show = FALSE ))){
+  #   return(lm( ratio1~log(ratio2) ))
+  # }
   
   else{
     return(NULL)
@@ -230,12 +230,14 @@ soap.tons.model = lm(pop$Total.Import.in.USD ~ soap.data$Import.in.Tons)
 basicPlots(soap.tons.model, main = "Total Import VS Soap Tons")
 runTests(soap.tons.model)
 tryTransform(pop$Total.Import.in.USD, soap.data$Import.in.Tons)
+tryTransform(soap.data$Import.in.Tons, pop$Total.Import.in.USD)
 
 
 shamp.tons.model = lm(pop$Total.Import.in.USD ~ shampoo.data$Import.in.Tons)
 basicPlots(shamp.tons.model, main = "Total Import VS Shampoo Tons")
 runTests(shamp.tons.model)
 tryTransform(pop$Total.Import.in.USD, shampoo.data$Import.in.Tons)
+tryTransform(shampoo.data$Import.in.Tons, pop$Total.Import.in.USD)
 
 
 #ACCEPTABLE
@@ -243,7 +245,7 @@ tooth.tons.model = lm(pop$Total.Import.in.USD ~ toothpaste.data$Import.in.Tons)
 basicPlots(tooth.tons.model, main = "Total Import VS Toothpaste Tons")
 runTests(tooth.tons.model)
 tryTransform(pop$Total.Import.in.USD, toothpaste.data$Import.in.Tons)
-
+tryTransform(toothpaste.data$Import.in.Tons, pop$Total.Import.in.USD)
 
 
 #---------------------------------------------------------
@@ -253,17 +255,20 @@ tryTransform(pop$Total.Import.in.USD, toothpaste.data$Import.in.Tons)
 soap.cif.model = lm(pop$Total.Import.in.USD ~ soap.cif)
 basicPlots(soap.cif.model, main = "Total Import VS Soap Total CIF")
 runTests(soap.cif.model)
-model = tryTransform(pop$Total.Import.in.USD, soap.cif)
+tryTransform(pop$Total.Import.in.USD, soap.cif)
+tryTransform(soap.cif, pop$Total.Import.in.USD)
 
 shamp.cif.model = lm(pop$Total.Import.in.USD ~ shamp.cif)
 basicPlots(shamp.cif.model, main = "Total Import VS Shampoo Total CIF")
 runTests(shamp.cif.model)
-model = tryTransform(pop$Total.Import.in.USD, shamp.cif)
+tryTransform(pop$Total.Import.in.USD, shamp.cif)
+tryTransform(shamp.cif, pop$Total.Import.in.USD)
 
 tooth.cif.model = lm(pop$Total.Import.in.USD ~ tooth.cif)
 basicPlots(tooth.cif.model, main = "Total Import VS Toothpaste Total CIF")
 runTests(tooth.cif.model)
 tryTransform(pop$Total.Import.in.USD, tooth.cif)
+tryTransform(tooth.cif,pop$Total.Import.in.USD)
 
 
 #--------------------------------------------------------
@@ -273,17 +278,19 @@ soap.cif.adj.model = lm(pop$Total.Import.in.USD ~ soap.cif.adj)
 basicPlots(soap.cif.adj.model, main = "Total Import VS Soap Total CIF(adj)")
 runTests(soap.cif.adj.model)
 tryTransform(pop$Total.Import.in.USD, soap.cif.adj)
+tryTransform(soap.cif.adj, pop$Total.Import.in.USD)
 
 shamp.cif.adj.model = lm(pop$Total.Import.in.USD ~ shamp.cif.adj)
 basicPlots(shamp.cif.adj.model, main = "Total Import VS Shampoo Total CIF(adj)")
 runTests(shamp.cif.adj.model)
 tryTransform(pop$Total.Import.in.USD, shamp.cif.adj)
-
+tryTransform(shamp.cif.adj, pop$Total.Import.in.USD)
 
 tooth.cif.adj.model = lm(pop$Total.Import.in.USD ~ tooth.cif.adj)
 basicPlots(tooth.cif.adj.model, main = "Total Import VS Toothpaste Total CIF(adj)")
 runTests(tooth.cif.adj.model)
 tryTransform(pop$Total.Import.in.USD, tooth.cif.adj)
+tryTransform(tooth.cif.adj, pop$Total.Import.in.USD)
 
 #-----------------------------------------------------
 #total imports VS combined hygiene 
@@ -294,15 +301,23 @@ combined.cif.model = lm(pop$Total.Import.in.USD ~ combined.cif)
 basicPlots(combined.cif.model, main = "Total Import VS Combined Total CIF")
 runTests(combined.cif.model)
 tryTransform(pop$Total.Import.in.USD, combined.cif)
+tryTransform(combined.cif, pop$Total.Import.in.USD)
 
 
 combined.cif.adj.model = lm(pop$Total.Import.in.USD ~ combined.cif.adj)
 basicPlots(combined.cif.adj.model, main = "Total Import VS Combined Total CIF(adj)")
 runTests(combined.cif.adj.model)
 tryTransform(pop$Total.Import.in.USD, combined.cif.adj)
+tryTransform(combined.cif.adj, pop$Total.Import.in.USD)
 
 combined.tons.model = lm(pop$Total.Import.in.USD ~ combined.tons)
 basicPlots(combined.tons.model, main = "Total Import VS Combined Total Tons")
 runTests(combined.tons.model)
 tryTransform(pop$Total.Import.in.USD, combined.tons)
+tryTransform(combined.tons, pop$Total.Import.in.USD)
 
+#0-----------------------
+totalVsCardholders <- tryTransform(shampoo.data$Import.in.Tons, iran$Total.Cardholders)
+totalVsCardholders
+runTests(lm(shampoo.data$Import.in.Tons~ iran$Total.Cardholders))
+basicPlots(lm(shampoo.data$Import.in.Tons~ iran$Total.Cardholders))
