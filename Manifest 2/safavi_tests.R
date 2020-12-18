@@ -272,6 +272,10 @@ tryTransform(tooth.cif,pop$Total.Import.in.USD)
 #ACCEPTABLE WHEN LOG-LOG
 log.log.tooth.cif.model = tryTransform(pop$Total.Import.in.USD, tooth.cif)
 basicPlots(log.log.tooth.cif.model)
+
+
+#--------------------------------------------------
+#using NEW total cif vs cif of hygiene
 #--------------------------------------------------------
 #Total Import in $ VS each hygiene product in Rial (adjusted for inflation)
 
@@ -336,10 +340,10 @@ member_cardholder<-lm(iran$Total.Cardholders~ iran$Total.Members)
 runTests(member_cardholder)
 summary(member_cardholder)
 
-resids = member_cardholder$residuals
+resids = stdres(member_cardholder)
 plot(t(member_cardholder$model[1]) ~ t(member_cardholder$model[2]), 
      xlab = "Number of Members of Iran CoC", ylab = "Number of Iran Ex-Im Cardholders")
 abline(member_cardholder$coefficients[1], member_cardholder$coefficients[2])
-plot(resids~ iran$Year, ylab = "Residuals")
+plot(resids, ylab = "Residuals")
 abline(0,0, col = 'blue', lty = 2)
 
